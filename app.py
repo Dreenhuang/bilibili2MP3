@@ -118,6 +118,30 @@ def get_video_info(bvid):
     return None
 
 
+def get_user_info(user_id):
+    """获取用户信息"""
+    user_id = extract_user_id(user_id)
+    try:
+        cmd = ['yt-dlp', '--dump-json', '--no-warnings', f'https://space.bilibili.com/{user_id}']
+        result = subprocess.run(cmd, capture_output=True, timeout=30)
+        if result.returncode == 0:
+            stdout = result.stdout.decode('utf-8', errors='ignore')
+            for line in stdout.strip().split('\n'):
+                if line.strip():
+                    try:
+                        info = json.loads(line)
+                        return {
+                            'uploader': info.get('uploader', '') or info.get('channel', ''),
+                            'channel_id': info.get('channel_id', ''),
+                            'playlist_title': info.get('playlist_title', '')
+                        }
+                    except:
+                        continue
+    except Exception as e:
+        print(f"获取用户信息失败: {e}")
+    return None
+
+
 def get_user_videos(user_id):
     """获取用户所有视频"""
     user_id = extract_user_id(user_id)
@@ -302,7 +326,14 @@ def api_get_user_videos(user_input):
     """获取用户视频列表"""
     user_id = extract_user_id(user_input)
     videos = get_user_videos(user_id)
-    return jsonify({'videos': videos, 'count': len(videos), 'user_id': user_id})
+    uploader = ""
+    
+    if videos:
+        info = get_user_info(user_id)
+        if info:
+            uploader = info.get('uploader', '')
+    
+    return jsonify({'videos': videos, 'count': len(videos), 'user_id': user_id, 'uploader': uploader})
 
 
 @app.route('/api/video/info/<path:bvid_input>')

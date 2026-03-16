@@ -265,6 +265,15 @@ const PageDownload = {
                 document.getElementById('video-count').textContent = data.count;
                 document.getElementById('videos-section').style.display = 'block';
                 
+                // 更新博主名称
+                if (data.uploader) {
+                    document.getElementById('user-name').textContent = data.uploader;
+                    document.getElementById('user-desc').textContent = 'B站用户';
+                } else {
+                    document.getElementById('user-name').textContent = '用户 ' + data.user_id;
+                    document.getElementById('user-desc').textContent = '';
+                }
+                
                 UI.showToast('成功', `获取到 ${data.count} 个视频`, 'success');
             } else {
                 UI.showToast('提示', '未找到视频', 'warning');
