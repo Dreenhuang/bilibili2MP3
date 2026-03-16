@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>B站视频下载器</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- 侧边栏 -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <i class="fas fa-cloud-download-alt"></i>
+                    <span>B站下载器</span>
+                </div>
+            </div>
+            
+            <nav class="sidebar-nav">
+                <a href="#" class="nav-item active" data-page="download">
+                    <i class="fas fa-download"></i>
+                    <span>下载中心</span>
+                </a>
+                <a href="#" class="nav-item" data-page="videos">
+                    <i class="fas fa-list"></i>
+                    <span>视频列表</span>
+                </a>
+                <a href="#" class="nav-item" data-page="tasks">
+                    <i class="fas fa-tasks"></i>
+                    <span>下载任务</span>
+                    <span class="badge" id="task-badge">0</span>
+                </a>
+                <a href="#" class="nav-item" data-page="history">
+                    <i class="fas fa-history"></i>
+                    <span>历史记录</span>
+                </a>
+                <a href="#" class="nav-item" data-page="settings">
+                    <i class="fas fa-cog"></i>
+                    <span>设置</span>
+                </a>
+            </nav>
+            
+            <div class="sidebar-footer">
+                <div class="storage-info">
+                    <div class="storage-header">
+                        <i class="fas fa-hdd"></i>
+                        <span>存储空间</span>
+                    </div>
+                    <div class="storage-bar">
+                        <div class="storage-progress" id="storage-progress"></div>
+                    </div>
+                    <div class="storage-text">
+                        <span id="storage-used">0 MB</span> / <span id="storage-total">0 GB</span>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- 主内容区 -->
+        <main class="main-content">
+            <!-- 顶部栏 -->
+            <header class="top-bar">
+                <div class="search-box">
+                    <i class="fas fa-search"></i>
+                    <input type="text" placeholder="搜索视频..." id="search-input">
+                </div>
+                <div class="top-actions">
+                    <button class="btn-icon" id="theme-toggle" title="切换主题">
+                        <i class="fas fa-moon"></i>
+                    </button>
+                    <button class="btn-icon" id="refresh-btn" title="刷新">
+                        <i class="fas fa-sync-alt"></i>
+                    </button>
+                    <div class="user-menu">
+                        <i class="fas fa-user-circle"></i>
+                    </div>
+                </div>
+            </header>
+
+            <!-- 页面内容 -->
+            <div class="page-content">
+                <!-- 下载中心页面 -->
+                <div class="page active" id="page-download">
+                    <div class="page-header">
+                        <h1>下载中心</h1>
+                        <p>输入B站用户ID或视频链接开始下载</p>
+                    </div>
+
+                    <div class="download-input-section">
+                        <div class="input-tabs">
+                            <button class="tab-btn active" data-tab="user">用户视频</button>
+                            <button class="tab-btn" data-tab="single">单个视频</button>
+                            <button class="tab-btn" data-tab="batch">批量下载</button>
+                        </div>
+
+                        <!-- 用户视频下载 -->
+                        <div class="tab-content active" id="tab-user">
+                            <div class="input-group">
+                                <div class="input-wrapper">
+                                    <i class="fas fa-user"></i>
+                                    <input type="text" id="user-id-input" placeholder="输入B站用户ID (例如: 647411513)" value="647411513">
+                                    <button class="btn-primary" id="fetch-videos-btn">
+                                        <i class="fas fa-search"></i>
+                                        获取视频
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <div class="user-info-card" id="user-info-card" style="display: none;">
+                                <div class="user-avatar">
+                                    <i class="fas fa-user-circle"></i>
+                                </div>
+                                <div class="user-details">
+                                    <h3>薄世宁医生</h3>
+                                    <p>北医三院危重医学科副主任医师</p>
+                                    <div class="user-stats">
+                                        <span><i class="fas fa-video"></i> <span id="video-count">0</span> 个视频</span>
+                                    </div>
+                                </div>
+                                <button class="btn-primary" id="download-all-btn">
+                                    <i class="fas fa-download"></i>
+                                    下载全部
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- 单个视频下载 -->
+                        <div class="tab-content" id="tab-single">
+                            <div class="input-group">
+                                <div class="input-wrapper">
+                                    <i class="fas fa-link"></i>
+                                    <input type="text" id="video-url-input" placeholder="输入B站视频链接或BV号 (例如: BV1xx411c7mD)">
+                                    <button class="btn-primary" id="download-single-btn">
+                                        <i class="fas fa-download"></i>
+                                        下载
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <div class="video-preview" id="video-preview" style="display: none;">
+                                <div class="preview-thumbnail">
+                                    <img src="" alt="视频封面" id="preview-thumb">
+                                </div>
+                                <div class="preview-info">
+                                    <h3 id="preview-title">视频标题</h3>
+                                    <p id="preview-author">作者</p>
+                                    <div class="preview-stats">
+                                        <span><i class="fas fa-play"></i> <span id="preview-views">0</span></span>
+                                        <span><i class="fas fa-thumbs-up"></i> <span id="preview-likes">0</span></span>
+                                        <span><i class="fas fa-clock"></i> <span id="preview-duration">00:00</span></span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 批量下载 -->
+                        <div class="tab-content" id="tab-batch">
+                            <div class="input-group">
+                                <textarea id="batch-input" placeholder="输入多个BV号或链接，每行一个&#10;例如:&#10;BV1xx411c7mD&#10;BV1yy411c7mD"></textarea>
+                                <button class="btn-primary" id="download-batch-btn">
+                                    <i class="fas fa-download"></i>
+                                    批量下载
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 视频列表 -->
+                    <div class="videos-section" id="videos-section" style="display: none;">
+                        <div class="section-header">
+                            <h2>视频列表</h2>
+                            <div class="section-actions">
+                                <label class="checkbox-label">
+                                    <input type="checkbox" id="select-all">
+                                    <span>全选</span>
+                                </label>
+                                <button class="btn-secondary" id="download-selected-btn">
+                                    <i class="fas fa-download"></i>
+                                    下载选中
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="videos-grid" id="videos-grid">
+                            <!-- 视频卡片将在这里动态生成 -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 视频列表页面 -->
+                <div class="page" id="page-videos">
+                    <div class="page-header">
+                        <h1>视频列表</h1>
+                        <p>管理已获取的视频</p>
+                    </div>
+                    <div class="videos-list-container" id="videos-list-container">
+                        <div class="empty-state">
+                            <i class="fas fa-film"></i>
+                            <p>暂无视频，请先获取视频列表</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 下载任务页面 -->
+                <div class="page" id="page-tasks">
+                    <div class="page-header">
+                        <h1>下载任务</h1>
+                        <p>查看和管理正在进行的下载</p>
+                    </div>
+                    <div class="tasks-container" id="tasks-container">
+                        <div class="empty-state">
+                            <i class="fas fa-tasks"></i>
+                            <p>暂无下载任务</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 历史记录页面 -->
+                <div class="page" id="page-history">
+                    <div class="page-header">
+                        <h1>历史记录</h1>
+                        <p>查看已下载的文件</p>
+                    </div>
+                    <div class="history-container" id="history-container">
+                        <div class="files-list" id="files-list">
+                            <!-- 文件列表将在这里动态生成 -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 设置页面 -->
+                <div class="page" id="page-settings">
+                    <div class="page-header">
+                        <h1>设置</h1>
+                        <p>自定义下载器和应用偏好</p>
+                    </div>
+                    
+                    <div class="settings-container">
+                        <!-- 下载设置 -->
+                        <div class="settings-section">
+                            <h3><i class="fas fa-download"></i> 下载设置</h3>
+                            
+                            <div class="setting-item">
+                                <div class="setting-info">
+                                    <label>下载路径</label>
+                                    <p>选择保存音频文件的文件夹</p>
+                                </div>
+                                <div class="setting-control">
+                                    <div class="path-input">
+                                        <input type="text" id="setting-download-path" readonly>
+                                        <button class="btn-secondary" id="browse-path-btn">浏览</button>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="setting-item">
+                                <div class="setting-info">
+                                    <label>音频质量</label>
+                                    <p>选择下载音频的质量</p>
+                                </div>
+                                <div class="setting-control">
+                                    <select id="setting-quality">
+                                        <option value="0">最佳质量 (0)</option>
+                                        <option value="2">高质量 (2)</option>
+                                        <option value="5">标准质量 (5)</option>
+                                        <option value="7">较低质量 (7)</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div class="setting-item">
+                                <div class="setting-info">
+                                    <label>音频格式</label>
+                                    <p>选择输出音频格式</p>
+                                </div>
+                                <div class="setting-control">
+                                    <select id="setting-format">
+                                        <option value="mp3">MP3</option>
+                                        <option value="m4a">M4A</option>
+                                        <option value="wav">WAV</option>
+                                        <option value="flac">FLAC</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div class="setting-item">
+                                <div class="setting-info">
+                                    <label>代理设置</label>
+                                    <p>HTTP/HTTPS 代理地址 (可选)</p>
+                                </div>
+                                <div class="setting-control">
+                                    <input type="text" id="setting-proxy" placeholder="http://127.0.0.1:7890">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 外观设置 -->
+                        <div class="settings-section">
+                            <h3><i class="fas fa-palette"></i> 外观设置</h3>
+                            
+                            <div class="setting-item">
+                                <div class="setting-info">
+                                    <label>主题模式</label>
+                                    <p>选择应用的主题</p>
+                                </div>
+                                <div class="setting-control">
+                                    <div class="theme-options">
+                                        <label class="theme-option">
+                                            <input type="radio" name="theme" value="dark" checked>
+                                            <span class="theme-preview dark">
+                                                <i class="fas fa-moon"></i>
+                                                深色
+                                            </span>
+                                        </label>
+                                        <label class="theme-option">
+                                            <input type="radio" name="theme" value="light">
+                                            <span class="theme-preview light">
+                                                <i class="fas fa-sun"></i>
+                                                浅色
+                                            </span>
+                                        </label>
+                                        <label class="theme-option">
+                                            <input type="radio" name="theme" value="auto">
+                                            <span class="theme-preview auto">
+                                                <i class="fas fa-adjust"></i>
+                                                自动
+                                            </span>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="setting-item">
+                                <div class="setting-info">
+                                    <label>通知音效</label>
+                                    <p>下载完成时播放提示音</p>
+                                </div>
+                                <div class="setting-control">
+                                    <label class="toggle-switch">
+                                        <input type="checkbox" id="setting-notification" checked>
+                                        <span class="toggle-slider"></span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 关于 -->
+                        <div class="settings-section">
+                            <h3><i class="fas fa-info-circle"></i> 关于</h3>
+                            <div class="about-info">
+                                <div class="about-logo">
+                                    <i class="fas fa-cloud-download-alt"></i>
+                                    <span>B站视频下载器</span>
+                                </div>
+                                <p class="about-version">版本 1.0.0</p>
+                                <div class="about-links">
+                                    <a href="#"><i class="fab fa-github"></i> GitHub</a>
+                                    <a href="#"><i class="fas fa-book"></i> 使用文档</a>
+                                    <a href="#"><i class="fas fa-bug"></i> 反馈问题</a>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="settings-actions">
+                            <button class="btn-secondary" id="reset-settings-btn">恢复默认</button>
+                            <button class="btn-primary" id="save-settings-btn">
+                                <i class="fas fa-save"></i>
+                                保存设置
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- 通知容器 -->
+    <div class="toast-container" id="toast-container"></div>
+
+    <!-- 加载动画 -->
+    <div class="loading-overlay" id="loading-overlay" style="display: none;">
+        <div class="loading-spinner">
+            <div class="spinner"></div>
+            <p>正在处理...</p>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>
